@@ -1,13 +1,10 @@
-'use strict';
-const cheerio = require('../..');
-const { food } = require('../__fixtures__/fixtures');
-const { fruits } = require('../__fixtures__/fixtures');
-const { drinks } = require('../__fixtures__/fixtures');
-const { text } = require('../__fixtures__/fixtures');
-const { forms } = require('../__fixtures__/fixtures');
+import cheerio from '../../src';
+import type { CheerioAPI, Cheerio } from '../cheerio';
+import type { Node, Element } from 'domhandler';
+import { food, fruits, drinks, text, forms } from '../__fixtures__/fixtures';
 
 describe('$(...)', () => {
-  let $;
+  let $: CheerioAPI;
 
   beforeEach(() => {
     $ = cheerio.load(fruits);
@@ -16,7 +13,7 @@ describe('$(...)', () => {
   describe('.load', () => {
     it('should throw a TypeError if given invalid input', () => {
       expect(() => {
-        cheerio.load();
+        (cheerio.load as any)();
       }).toThrow('cheerio.load() expects a string');
     });
   });
@@ -668,11 +665,11 @@ describe('$(...)', () => {
 
     it('(selector) : should find the closest element that matches the selector, searching through its ancestors and itself', () => {
       expect($('.orange').closest('.apple')).toHaveLength(0);
-      let result = $('.orange', food).closest('#food');
+      let result = $('.orange', food).closest('#food') as Cheerio<Element>;
       expect(result[0].attribs.id).toBe('food');
-      result = $('.orange', food).closest('ul');
+      result = $('.orange', food).closest('ul') as Cheerio<Element>;
       expect(result[0].attribs.id).toBe('fruits');
-      result = $('.orange', food).closest('li');
+      result = $('.orange', food).closest('li') as Cheerio<Element>;
       expect(result[0].attribs.class).toBe('orange');
     });
 
@@ -689,7 +686,7 @@ describe('$(...)', () => {
 
   describe('.each', () => {
     it('( (i, elem) -> ) : should loop selected returning fn with (i, elem)', () => {
-      const items = [];
+      const items: Element[] = [];
       const classes = ['apple', 'orange', 'pear'];
       $('li').each(function (idx, elem) {
         items[idx] = elem;
@@ -728,13 +725,13 @@ describe('$(...)', () => {
   describe('.map', () => {
     it('(fn) : should be invoked with the correct arguments and context', () => {
       const $fruits = $('li');
-      const args = [];
-      const thisVals = [];
+      const args: [number, Node][] = [];
+      const thisVals: Node[] = [];
 
-      $fruits.map(function () {
-        args.push(Array.prototype.slice.call(arguments));
+      $fruits.map(function (...myArgs) {
+        args.push(myArgs);
         thisVals.push(this);
-        return;
+        return undefined;
       });
 
       expect(args).toStrictEqual([
@@ -768,7 +765,7 @@ describe('$(...)', () => {
     it('(fn) : should preform a shallow merge on arrays returned by iterator', () => {
       const $fruits = $('li');
 
-      const $mapped = $fruits.map(() => [1, [3, 4]]);
+      const $mapped = $fruits.map(() => [1, [3, 4]] as any);
 
       expect($mapped.get()).toStrictEqual([1, [3, 4], 1, [3, 4], 1, [3, 4]]);
     });
@@ -776,7 +773,7 @@ describe('$(...)', () => {
     it('(fn) : should tolerate `null` and `undefined` when flattening arrays returned by iterator', () => {
       const $fruits = $('li');
 
-      const $mapped = $fruits.map(() => [null, undefined]);
+      const $mapped = $fruits.map(() => [null, undefined] as any);
 
       expect($mapped.get()).toStrictEqual([
         null,
@@ -869,7 +866,7 @@ describe('$(...)', () => {
 
       const $notOrange = $fruits.not(function (i, el) {
         expect(this).toBe(el);
-        expect(el.name).toBe('li');
+        expect(el).toHaveProperty('name', 'li');
         expect(typeof i).toBe('number');
         return $(this).attr('class') === 'orange';
       });
@@ -913,10 +910,12 @@ describe('$(...)', () => {
 
   describe('.first', () => {
     it('() : should return the first item', () => {
-      const $src = $('<span>foo</span><span>bar</span><span>baz</span>');
+      const $src = $(
+        '<span>foo</span><span>bar</span><span>baz</span>'
+      ) as Cheerio<Element>;
       const $elem = $src.first();
       expect($elem.length).toBe(1);
-      expect($elem[0].childNodes[0].data).toBe('foo');
+      expect($elem[0].childNodes[0]).toHaveProperty('data', 'foo');
     });
 
     it('() : should return an empty object for an empty object', () => {
@@ -929,10 +928,12 @@ describe('$(...)', () => {
 
   describe('.last', () => {
     it('() : should return the last element', () => {
-      const $src = $('<span>foo</span><span>bar</span><span>baz</span>');
+      const $src = $(
+        '<span>foo</span><span>bar</span><span>baz</span>'
+      ) as Cheerio<Element>;
       const $elem = $src.last();
       expect($elem.length).toBe(1);
-      expect($elem[0].childNodes[0].data).toBe('baz');
+      expect($elem[0].childNodes[0]).toHaveProperty('data', 'baz');
     });
 
     it('() : should return an empty object for an empty object', () => {
@@ -945,21 +946,21 @@ describe('$(...)', () => {
 
   describe('.first & .last', () => {
     it('() : should return equivalent collections if only one element', () => {
-      const $src = $('<span>bar</span>');
+      const $src = $('<span>bar</span>') as Cheerio<Element>;
       const $first = $src.first();
       const $last = $src.last();
       expect($first.length).toBe(1);
-      expect($first[0].childNodes[0].data).toBe('bar');
+      expect($first[0].childNodes[0]).toHaveProperty('data', 'bar');
       expect($last.length).toBe(1);
-      expect($last[0].childNodes[0].data).toBe('bar');
+      expect($last[0].childNodes[0]).toHaveProperty('data', 'bar');
       expect($first[0]).toBe($last[0]);
     });
   });
 
   describe('.eq', () => {
-    function getText(el) {
+    function getText(el: string | Cheerio<Node>) {
       if (!el.length) return '';
-      return el[0].childNodes[0].data;
+      return (el as any)[0].childNodes[0].data;
     }
 
     it('(i) : should return the element at the specified index', () => {
@@ -1049,9 +1050,9 @@ describe('$(...)', () => {
   });
 
   describe('.slice', () => {
-    function getText(el) {
+    function getText(el: string | Cheerio<Node>) {
       if (!el.length) return '';
-      return el[0].childNodes[0].data;
+      return (el as any)[0].childNodes[0].data;
     }
 
     it('(start) : should return all elements after the given index', () => {
@@ -1075,7 +1076,7 @@ describe('$(...)', () => {
   });
 
   describe('.end() :', () => {
-    let $fruits;
+    let $fruits: Cheerio<Element>;
 
     beforeEach(() => {
       $fruits = $('#fruits').children();
@@ -1148,12 +1149,12 @@ describe('$(...)', () => {
   });
 
   describe('.add()', () => {
-    let $fruits;
-    let $apple;
-    let $orange;
-    let $pear;
-    let $carrot;
-    let $sweetcorn;
+    let $fruits: Cheerio<Node>;
+    let $apple: Cheerio<Element>;
+    let $orange: Cheerio<Element>;
+    let $pear: Cheerio<Element>;
+    let $carrot: Cheerio<Element>;
+    let $sweetcorn: Cheerio<Element>;
 
     beforeEach(() => {
       $ = cheerio.load(food);

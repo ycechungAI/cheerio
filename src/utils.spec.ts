@@ -1,6 +1,6 @@
-'use strict';
-const fixtures = require('../__fixtures__/fixtures');
-const cheerio = require('../..');
+import * as fixtures from './__fixtures__/fixtures';
+import cheerio from '.';
+import { CheerioAPI } from './cheerio';
 
 describe('cheerio', () => {
   describe('.html', () => {
@@ -195,17 +195,17 @@ describe('cheerio', () => {
 
     it('("<script>", true) : preserves scripts when requested', () => {
       const html = '<script>undefined()</script>';
-      expect($.parseHTML(html, true)[0].tagName).toMatch(/script/i);
+      expect($.parseHTML(html, true)[0]).toHaveProperty('tagName', 'script');
     });
 
     it('("scriptAndNonScript) : preserves non-script nodes', () => {
       const html = '<script>undefined()</script><div></div>';
-      expect($.parseHTML(html)[0].tagName).toMatch(/div/i);
+      expect($.parseHTML(html)[0]).toHaveProperty('tagName', 'div');
     });
 
     it('(scriptAndNonScript, true) : Preserves script position', () => {
       const html = '<script>undefined()</script><div></div>';
-      expect($.parseHTML(html, true)[0].tagName).toMatch(/script/i);
+      expect($.parseHTML(html, true)[0]).toHaveProperty('tagName', 'script');
     });
 
     it('(text) : returns a text node', () => {
@@ -213,7 +213,7 @@ describe('cheerio', () => {
     });
 
     it('(\\ttext) : preserves leading whitespace', () => {
-      expect($.parseHTML('\t<div></div>')[0].data).toBe('\t');
+      expect($.parseHTML('\t<div></div>')[0]).toHaveProperty('data', '\t');
     });
 
     it('( text) : Leading spaces are treated as text nodes', () => {
@@ -231,7 +231,7 @@ describe('cheerio', () => {
 
     it('(garbageInput) : should not cause an error', () => {
       expect(
-        $.parseHTML('<#if><tr><p>This is a test.</p></tr><#/if>') || true
+        $.parseHTML('<#if><tr><p>This is a test.</p></tr><#/if>')
       ).toBeTruthy();
     });
 
@@ -247,8 +247,8 @@ describe('cheerio', () => {
 
   describe('.merge', () => {
     const $ = cheerio.load('');
-    let arr1;
-    let arr2;
+    let arr1: ArrayLike<number>;
+    let arr2: ArrayLike<number>;
 
     beforeEach(() => {
       arr1 = [1, 2, 3];
@@ -276,16 +276,19 @@ describe('cheerio', () => {
     });
 
     it('(arraylike, arraylike) : should handle objects that arent arrays, but are arraylike', () => {
-      arr1 = {};
-      arr2 = {};
-      arr1.length = 3;
-      arr1[0] = 'a';
-      arr1[1] = 'b';
-      arr1[2] = 'c';
-      arr2.length = 3;
-      arr2[0] = 'd';
-      arr2[1] = 'e';
-      arr2[2] = 'f';
+      const arr1: ArrayLike<string> = {
+        length: 3,
+        [0]: 'a',
+        [1]: 'b',
+        [2]: 'c',
+      };
+      const arr2 = {
+        length: 3,
+        [0]: 'd',
+        [1]: 'e',
+        [2]: 'f',
+      };
+
       $.merge(arr1, arr2);
       expect(arr1).toHaveLength(6);
       expect(arr1[3]).toBe('d');
@@ -295,36 +298,21 @@ describe('cheerio', () => {
     });
 
     it('(?, ?) : should gracefully reject invalid inputs', () => {
-      let ret = $.merge([4], 3);
-      expect(ret).toBeFalsy();
-      ret = $.merge({}, {});
-      expect(ret).toBeFalsy();
-      ret = $.merge([], {});
-      expect(ret).toBeFalsy();
-      ret = $.merge({}, []);
-      expect(ret).toBeFalsy();
-      let fakeArray1 = { length: 3 };
-      fakeArray1[0] = 'a';
-      fakeArray1[1] = 'b';
-      fakeArray1[3] = 'd';
-      ret = $.merge(fakeArray1, []);
-      expect(ret).toBeFalsy();
-      ret = $.merge([], fakeArray1);
-      expect(ret).toBeFalsy();
-      fakeArray1 = {};
-      fakeArray1.length = '7';
-      ret = $.merge(fakeArray1, []);
-      expect(ret).toBeFalsy();
-      fakeArray1.length = -1;
-      ret = $.merge(fakeArray1, []);
-      expect(ret).toBeFalsy();
+      expect($.merge([4], 3 as any)).toBeFalsy();
+      expect($.merge({} as any, {} as any)).toBeFalsy();
+      expect($.merge([], {} as any)).toBeFalsy();
+      expect($.merge({} as any, [])).toBeFalsy();
+      const fakeArray1 = { length: 3, [0]: 'a', [1]: 'b', [3]: 'd' };
+      expect($.merge(fakeArray1, [])).toBeFalsy();
+      expect($.merge([], fakeArray1)).toBeFalsy();
+      const fakeArray2 = { length: '7' };
+      expect($.merge(fakeArray2 as any, [])).toBeFalsy();
+      const fakeArray3 = { length: -1 };
+      expect($.merge(fakeArray3, [])).toBeFalsy();
     });
 
     it('(?, ?) : should no-op on invalid inputs', () => {
-      const fakeArray1 = { length: 3 };
-      fakeArray1[0] = 'a';
-      fakeArray1[1] = 'b';
-      fakeArray1[3] = 'd';
+      const fakeArray1 = { length: 3, [0]: 'a', [1]: 'b', [3]: 'd' };
       $.merge(fakeArray1, []);
       expect(fakeArray1).toHaveLength(3);
       expect(fakeArray1[0]).toBe('a');
@@ -339,7 +327,7 @@ describe('cheerio', () => {
   });
 
   describe('.contains', () => {
-    let $;
+    let $: CheerioAPI;
 
     beforeEach(() => {
       $ = cheerio.load(fixtures.food);

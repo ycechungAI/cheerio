@@ -1,13 +1,16 @@
-'use strict';
-const cheerio = require('../..');
-const { fruits } = require('../__fixtures__/fixtures');
-const { vegetables } = require('../__fixtures__/fixtures');
-const { food } = require('../__fixtures__/fixtures');
-const { chocolates } = require('../__fixtures__/fixtures');
-const { inputs } = require('../__fixtures__/fixtures');
+import cheerio from '..';
+import type { Cheerio } from '../cheerio';
+import type { Element } from 'domhandler';
+import {
+  fruits,
+  vegetables,
+  food,
+  chocolates,
+  inputs,
+} from '../__fixtures__/fixtures';
 
 describe('$(...)', () => {
-  let $;
+  let $: typeof cheerio;
 
   beforeEach(() => {
     $ = cheerio.load(fruits);
@@ -41,7 +44,10 @@ describe('$(...)', () => {
     });
 
     it('(key, value) : should set multiple attr', () => {
-      const $el = cheerio('<div></div> <div></div>').attr('class', 'pear');
+      const $el = cheerio('<div></div> <div></div>').attr(
+        'class',
+        'pear'
+      ) as Cheerio<Element>;
 
       expect($el[0].attribs.class).toBe('pear');
       expect($el[1].attribs).toBeUndefined();
@@ -96,7 +102,7 @@ describe('$(...)', () => {
 
     it('(key, value) : should coerce values to a string', () => {
       const $apple = $('.apple');
-      $apple.attr('data-test', 1);
+      $apple.attr('data-test', 1 as any);
       expect($apple[0].attribs['data-test']).toBe('1');
       expect($apple.attr('data-test')).toBe('1');
     });
@@ -155,8 +161,8 @@ describe('$(...)', () => {
   });
 
   describe('.prop', () => {
-    let checkbox;
-    let selectMenu;
+    let checkbox: Cheerio<Element>;
+    let selectMenu: Cheerio<Element>;
 
     beforeEach(() => {
       $ = cheerio.load(inputs);
@@ -176,8 +182,8 @@ describe('$(...)', () => {
 
     it('(invalid key) : invalid prop should get undefined', () => {
       expect(checkbox.prop('lol')).toBeUndefined();
-      expect(checkbox.prop(4)).toBeUndefined();
-      expect(checkbox.prop(true)).toBeUndefined();
+      expect(checkbox.prop(4 as any)).toBeUndefined();
+      expect(checkbox.prop(true as any)).toBeUndefined();
     });
 
     it('(key, value) : should set prop', () => {
@@ -232,7 +238,7 @@ describe('$(...)', () => {
 
     it('(invalid element/tag) : prop should return undefined', () => {
       expect($(undefined).prop('prop')).toBeUndefined();
-      expect($(null).prop('prop')).toBeUndefined();
+      expect($(null as any).prop('prop')).toBeUndefined();
     });
 
     it('("outerHTML") : should render properly', () => {
@@ -373,7 +379,7 @@ describe('$(...)', () => {
       const b = $('.linth').data('snack', 'chocoletti');
 
       expect(() => {
-        a.data(4, 'throw');
+        a.data(4 as any, 'throw');
       }).not.toThrow();
       expect(a.data('balls')).toStrictEqual('giandor');
       expect(b.data('snack')).toStrictEqual('chocoletti');
@@ -393,7 +399,7 @@ describe('$(...)', () => {
         flop: 'Pippilotti Rist',
         top: 'Frigor',
         url: 'http://www.cailler.ch/',
-      })['0'];
+      })['0' as any] as any;
 
       expect(data.id).toBe('Cailler');
       expect(data.flop).toBe('Pippilotti Rist');
@@ -554,7 +560,7 @@ describe('$(...)', () => {
   });
 
   describe('.hasClass', () => {
-    function withClass(attr) {
+    function withClass(attr: string) {
       return cheerio(`<div class="${attr}"></div>`);
     }
 
@@ -633,14 +639,14 @@ describe('$(...)', () => {
 
     it('(fn) : should add classes returned from the function', () => {
       const $fruits = $('#fruits').children().add($('#fruits'));
-      const args = [];
-      const thisVals = [];
+      const args: [i: number, className: string][] = [];
+      const thisVals: Element[] = [];
       const toAdd = ['main', 'apple red', '', undefined];
 
-      $fruits.addClass(function (idx) {
-        args.push(Array.from(arguments));
+      $fruits.addClass(function (...myArgs) {
+        args.push(myArgs);
         thisVals.push(this);
-        return toAdd[idx];
+        return toAdd[myArgs[0]];
       });
 
       expect(args).toStrictEqual([
@@ -748,14 +754,14 @@ describe('$(...)', () => {
 
     it('(fn) : should remove classes returned from the function', () => {
       const $fruits = $('#fruits').children();
-      const args = [];
-      const thisVals = [];
+      const args: [number, string][] = [];
+      const thisVals: Element[] = [];
       const toAdd = ['apple red', '', undefined];
 
-      $fruits.removeClass(function (idx) {
-        args.push(Array.from(arguments));
+      $fruits.removeClass(function (...myArgs) {
+        args.push(myArgs);
         thisVals.push(this);
-        return toAdd[idx];
+        return toAdd[myArgs[0]];
       });
 
       expect(args).toStrictEqual([
@@ -816,7 +822,7 @@ describe('$(...)', () => {
     it('(class true) : should add only one instance of class', () => {
       $('.apple').toggleClass('tasty', true);
       $('.apple').toggleClass('tasty', true);
-      expect($('.apple').attr('class').match(/tasty/g).length).toBe(1);
+      expect($('.apple').attr('class')).toMatch(/tasty/g);
     });
 
     it('(class class, false) : should remove multiple classes from the element', () => {
@@ -873,18 +879,24 @@ describe('$(...)', () => {
       const original = $('.apple');
       const testAgainst = original.attr('class');
       expect(original.toggleClass().attr('class')).toStrictEqual(testAgainst);
-      expect(original.toggleClass(true).attr('class')).toStrictEqual(
+      expect(original.toggleClass(true as any).attr('class')).toStrictEqual(
         testAgainst
       );
-      expect(original.toggleClass(false).attr('class')).toStrictEqual(
+      expect(original.toggleClass(false as any).attr('class')).toStrictEqual(
         testAgainst
       );
-      expect(original.toggleClass(null).attr('class')).toStrictEqual(
+      expect(original.toggleClass(null as any).attr('class')).toStrictEqual(
         testAgainst
       );
-      expect(original.toggleClass(0).attr('class')).toStrictEqual(testAgainst);
-      expect(original.toggleClass(1).attr('class')).toStrictEqual(testAgainst);
-      expect(original.toggleClass({}).attr('class')).toStrictEqual(testAgainst);
+      expect(original.toggleClass(0 as any).attr('class')).toStrictEqual(
+        testAgainst
+      );
+      expect(original.toggleClass(1 as any).attr('class')).toStrictEqual(
+        testAgainst
+      );
+      expect(original.toggleClass({} as any).attr('class')).toStrictEqual(
+        testAgainst
+      );
     });
   });
 

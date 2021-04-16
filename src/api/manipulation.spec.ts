@@ -1,14 +1,14 @@
-'use strict';
-const cheerio = require('../..');
-const { fruits } = require('../__fixtures__/fixtures');
-const { divcontainers } = require('../__fixtures__/fixtures');
+import { load } from '../../src';
+import type { CheerioAPI, Cheerio } from '../cheerio';
+import { fruits, divcontainers } from '../__fixtures__/fixtures';
+import type { Node, Element } from 'domhandler';
 
 describe('$(...)', () => {
-  let $;
-  let $fruits;
+  let $: CheerioAPI;
+  let $fruits: Cheerio<Element>;
 
   beforeEach(() => {
-    $ = cheerio.load(fruits);
+    $ = load(fruits);
     $fruits = $('#fruits');
   });
 
@@ -87,15 +87,20 @@ describe('$(...)', () => {
 
     it('(fn) : should invoke the provided function with the correct arguments and context', () => {
       const $children = $fruits.children();
-      const args = [];
-      const thisValues = [];
+      const args: [number, Node][] = [];
+      const thisValues: Node[] = [];
 
-      $children.wrap(function () {
-        args.push(Array.from(arguments));
+      $children.wrap(function (...myArgs) {
+        args.push(myArgs);
         thisValues.push(this);
+        return '';
       });
 
-      expect(args).toStrictEqual([[0], [1], [2]]);
+      expect(args).toStrictEqual([
+        [0, $children[0]],
+        [1, $children[1]],
+        [2, $children[2]],
+      ]);
       expect(thisValues).toStrictEqual([
         $children[0],
         $children[1],
@@ -167,7 +172,7 @@ describe('$(...)', () => {
 
   describe('.wrapInner', () => {
     it('(Cheerio object) : should insert the element and add selected element(s) as its parent', () => {
-      const $container = $('<div class="container"></div>');
+      const $container = $('<div class="container"></div>') as Cheerio<Element>;
       $fruits.wrapInner($container);
 
       expect($fruits.children()[0]).toBe($container[0]);
@@ -180,7 +185,7 @@ describe('$(...)', () => {
     });
 
     it('(element) : should insert the element and add selected element(s) as its parent', () => {
-      const $container = $('<div class="container"></div>');
+      const $container = $('<div class="container"></div>') as Cheerio<Element>;
       $fruits.wrapInner($container[0]);
 
       expect($fruits.children()[0]).toBe($container[0]);
@@ -218,15 +223,20 @@ describe('$(...)', () => {
 
     it('(fn) : should invoke the provided function with the correct arguments and context', () => {
       const $children = $fruits.children();
-      const args = [];
-      const thisValues = [];
+      const args: [number, Node][] = [];
+      const thisValues: Node[] = [];
 
-      $children.wrapInner(function () {
-        args.push(Array.from(arguments));
+      $children.wrapInner(function (...myArgs) {
+        args.push(myArgs);
         thisValues.push(this);
+        return this;
       });
 
-      expect(args).toStrictEqual([[0], [1], [2]]);
+      expect(args).toStrictEqual([
+        [0, $children[0]],
+        [1, $children[1]],
+        [2, $children[2]],
+      ]);
       expect(thisValues).toStrictEqual([
         $children[0],
         $children[1],
@@ -257,7 +267,7 @@ describe('$(...)', () => {
       const $children = $fruits.children();
       const tags = [$('<div></div>'), $('<span></span>'), $('<p></p>')];
 
-      $children.wrapInner(() => tags.shift());
+      $children.wrapInner(() => tags.shift()!);
 
       expect($fruits.find('div')).toHaveLength(1);
       expect($fruits.find('div')[0]).toBe($('.apple').children()[0]);
@@ -317,7 +327,7 @@ describe('$(...)', () => {
   });
 
   describe('.unwrap', () => {
-    let $elem;
+    let $elem: CheerioAPI;
     const unwrapspans = [
       '<div id=unwrap style="display: none;">',
       '<div id=unwrap1><span class=unwrap>a</span><span class=unwrap>b</span></div>',
@@ -327,7 +337,7 @@ describe('$(...)', () => {
     ].join('');
 
     beforeEach(() => {
-      $elem = cheerio.load(unwrapspans);
+      $elem = load(unwrapspans);
     });
 
     it('() : should be unwrap span elements', () => {
@@ -402,11 +412,11 @@ describe('$(...)', () => {
   });
 
   describe('.wrapAll', () => {
-    let doc;
-    let $inner;
+    let doc: CheerioAPI;
+    let $inner: Cheerio<Element>;
 
     beforeEach(() => {
-      doc = cheerio.load(divcontainers);
+      doc = load(divcontainers);
       $inner = doc('.inner');
     });
 
@@ -498,7 +508,8 @@ describe('$(...)', () => {
 
       $new.wrapAll(function (index) {
         expect(this).toBe($new[0]);
-        expect(index).toBeUndefined();
+        expect(index).toBe(0);
+        return this;
       });
     });
   });
@@ -597,12 +608,13 @@ describe('$(...)', () => {
 
     it('(fn) : should invoke the callback with the correct arguments and context', () => {
       $fruits = $fruits.children();
-      const args = [];
-      const thisValues = [];
+      const args: [number, string][] = [];
+      const thisValues: Node[] = [];
 
-      $fruits.append(function () {
-        args.push(Array.from(arguments));
+      $fruits.append(function (...myArgs) {
+        args.push(myArgs);
         thisValues.push(this);
+        return this;
       });
 
       expect(args).toStrictEqual([
@@ -670,8 +682,8 @@ describe('$(...)', () => {
       expect(parent).toBeTruthy();
 
       $fruits.append($plum);
-      expect($plum[0].parent.type).not.toBe('root');
-      expect(parent.childNodes).not.toContain($plum[0]);
+      expect($plum[0].parent?.type).not.toBe('root');
+      expect(parent?.childNodes).not.toContain($plum[0]);
     });
   });
 
@@ -696,7 +708,7 @@ describe('$(...)', () => {
       $fruits.prepend($style);
       const styleTag = $fruits.children().get(0);
       expect(styleTag.tagName).toBe('style');
-      expect(styleTag.children[0].data).toBe('.foo {}');
+      expect(styleTag.children[0]).toHaveProperty('data', '.foo {}');
     });
 
     it('($(...)) : should add script element as first child', () => {
@@ -704,7 +716,7 @@ describe('$(...)', () => {
       $fruits.prepend($script);
       const scriptTag = $fruits.children().get(0);
       expect(scriptTag.tagName).toBe('script');
-      expect(scriptTag.children[0].data).toBe('var foo;');
+      expect(scriptTag.children[0]).toHaveProperty('data', 'var foo;');
     });
 
     it('(Node) : should add node as first child', () => {
@@ -769,13 +781,14 @@ describe('$(...)', () => {
     });
 
     it('(fn) : should invoke the callback with the correct arguments and context', () => {
-      const args = [];
-      const thisValues = [];
+      const args: [number, string][] = [];
+      const thisValues: Node[] = [];
       $fruits = $fruits.children();
 
-      $fruits.prepend(function () {
-        args.push(Array.from(arguments));
+      $fruits.prepend(function (...myArgs) {
+        args.push(myArgs);
         thisValues.push(this);
+        return this;
       });
 
       expect(args).toStrictEqual([
@@ -831,11 +844,11 @@ describe('$(...)', () => {
     it('($(...)) : should remove from root element', () => {
       const $plum = $('<li class="plum">Plum</li>');
       const root = $plum[0].parent;
-      expect(root.type).toBe('root');
+      expect(root?.type).toBe('root');
 
       $fruits.prepend($plum);
-      expect($plum[0].parent.type).not.toBe('root');
-      expect(root.childNodes).not.toContain($plum[0]);
+      expect($plum[0].parent?.type).not.toBe('root');
+      expect(root?.childNodes).not.toContain($plum[0]);
     });
   });
 
@@ -976,13 +989,14 @@ describe('$(...)', () => {
     });
 
     it('(fn) : should invoke the callback with the correct arguments and context', () => {
-      const args = [];
-      const thisValues = [];
+      const args: [number, string][] = [];
+      const thisValues: Node[] = [];
       $fruits = $fruits.children();
 
-      $fruits.after(function () {
-        args.push(Array.from(arguments));
+      $fruits.after(function (...myArgs) {
+        args.push(myArgs);
         thisValues.push(this);
+        return this;
       });
 
       expect(args).toStrictEqual([
@@ -1026,11 +1040,11 @@ describe('$(...)', () => {
     it('($(...)) : should remove from root element', () => {
       const $plum = $('<li class="plum">Plum</li>');
       const root = $plum[0].parent;
-      expect(root.type).toBe('root');
+      expect(root?.type).toBe('root');
 
       $fruits.after($plum);
-      expect($plum[0].parent.type).not.toBe('root');
-      expect(root.childNodes).not.toContain($plum[0]);
+      expect($plum[0].parent?.type).not.toBe('root');
+      expect(root?.childNodes).not.toContain($plum[0]);
     });
   });
 
@@ -1246,13 +1260,14 @@ describe('$(...)', () => {
     });
 
     it('(fn) : should invoke the callback with the correct arguments and context', () => {
-      const args = [];
-      const thisValues = [];
+      const args: [number, string][] = [];
+      const thisValues: Node[] = [];
       $fruits = $fruits.children();
 
-      $fruits.before(function () {
-        args.push(Array.from(arguments));
+      $fruits.before(function (...myArgs) {
+        args.push(myArgs);
         thisValues.push(this);
+        return this;
       });
 
       expect(args).toStrictEqual([
@@ -1296,11 +1311,11 @@ describe('$(...)', () => {
     it('($(...)) : should remove from root element', () => {
       const $plum = $('<li class="plum">Plum</li>');
       const root = $plum[0].parent;
-      expect(root.type).toBe('root');
+      expect(root?.type).toBe('root');
 
       $fruits.before($plum);
-      expect($plum[0].parent.type).not.toBe('root');
-      expect(root.childNodes).not.toContain($plum[0]);
+      expect($plum[0].parent?.type).not.toBe('root');
+      expect(root?.childNodes).not.toContain($plum[0]);
     });
   });
 
@@ -1459,11 +1474,11 @@ describe('$(...)', () => {
     it('($(...)) : should remove from root element', () => {
       const $plum = $('<li class="plum">Plum</li>');
       const root = $plum[0].parent;
-      expect(root.type).toBe('root');
+      expect(root?.type).toBe('root');
 
       $plum.remove();
       expect($plum[0].parent).toBe(null);
-      expect(root.childNodes).not.toContain($plum[0]);
+      expect(root?.childNodes).not.toContain($plum[0]);
     });
   });
 
@@ -1525,9 +1540,9 @@ describe('$(...)', () => {
     });
 
     it('(self) : should be replaced after replacing it with itself', () => {
-      const $a = cheerio.load('<a>foo</a>', null, false);
+      const $a = load('<a>foo</a>', null, false);
       const replacement = '<a>bar</a>';
-      $a('a').replaceWith((i, el) => el);
+      $a('a').replaceWith((_, el: Node) => el);
       $a('a').replaceWith(replacement);
       expect($a.html()).toBe(replacement);
     });
@@ -1549,11 +1564,11 @@ describe('$(...)', () => {
 
     it('(fn) : should invoke the callback with the correct argument and context', () => {
       const origChildren = $fruits.children().get();
-      const args = [];
-      const thisValues = [];
+      const args: [number, Node][] = [];
+      const thisValues: Node[] = [];
 
-      $fruits.children().replaceWith(function () {
-        args.push(Array.from(arguments));
+      $fruits.children().replaceWith(function (...myArgs) {
+        args.push(myArgs);
         thisValues.push(this);
         return '<li class="first">';
       });
@@ -1591,11 +1606,11 @@ describe('$(...)', () => {
     it('($(...)) : should remove from root element', () => {
       const $plum = $('<li class="plum">Plum</li>');
       const root = $plum[0].parent;
-      expect(root.type).toBe('root');
+      expect(root?.type).toBe('root');
 
       $fruits.children().replaceWith($plum);
-      expect($plum[0].parent.type).not.toBe('root');
-      expect(root.childNodes).not.toContain($plum[0]);
+      expect($plum[0].parent?.type).not.toBe('root');
+      expect(root?.childNodes).not.toContain($plum[0]);
     });
   });
 
@@ -1696,15 +1711,15 @@ describe('$(...)', () => {
 
     it('(script value) : should add content as text', () => {
       const $data = '<a><b>';
-      const $script = $('<script>').html($data);
+      const $script = $('<script>').html($data) as Cheerio<Element>;
 
       expect($script).toHaveLength(1);
       expect($script[0].type).toBe('script');
-      expect($script[0].name).toBe('script');
+      expect($script[0]).toHaveProperty('name', 'script');
 
       expect($script[0].children).toHaveLength(1);
       expect($script[0].children[0].type).toBe('text');
-      expect($script[0].children[0].data).toBe($data);
+      expect($script[0].children[0]).toHaveProperty('data', $data);
     });
   });
 
@@ -1725,7 +1740,7 @@ describe('$(...)', () => {
     });
 
     it('() : should pass options', () => {
-      const dom = cheerio.load('&', { xml: { decodeEntities: false } });
+      const dom = load('&', { xml: { decodeEntities: false } });
       expect(dom.root().toString()).toBe('&');
     });
   });
@@ -1741,7 +1756,10 @@ describe('$(...)', () => {
 
     it('(text) : sets the text for the child node', () => {
       $('.apple').text('Granny Smith Apple');
-      expect($('.apple')[0].childNodes[0].data).toBe('Granny Smith Apple');
+      expect($('.apple')[0].childNodes[0]).toHaveProperty(
+        'data',
+        'Granny Smith Apple'
+      );
     });
 
     it('(text) : inserts separate nodes for all children', () => {
@@ -1762,7 +1780,7 @@ describe('$(...)', () => {
 
       expect(textNode.parentNode).toBe($apple[0]);
       expect(textNode.nodeType).toBe(3);
-      expect(textNode.data).toBe('anything');
+      expect(textNode).toHaveProperty('data', 'anything');
     });
 
     it('should allow functions as arguments', () => {
@@ -1771,13 +1789,16 @@ describe('$(...)', () => {
         expect(content).toBe('Apple');
         return 'whatever mate';
       });
-      expect($('.apple')[0].childNodes[0].data).toBe('whatever mate');
+      expect($('.apple')[0].childNodes[0]).toHaveProperty(
+        'data',
+        'whatever mate'
+      );
     });
 
     it('should allow functions as arguments for multiple elements', () => {
       $('li').text((idx) => `text${idx}`);
-      $('li').each(function (idx) {
-        expect(this.childNodes[0].data).toBe(`text${idx}`);
+      $('li').each(function (this, idx) {
+        expect(this.childNodes[0]).toHaveProperty('data', `text${idx}`);
       });
     });
 
@@ -1793,7 +1814,7 @@ describe('$(...)', () => {
 
     it('( undefined ) : should act as an accessor', () => {
       const $div = $('<div>test</div>');
-      expect(typeof $div.text(undefined)).toBe('string');
+      expect(typeof $div.text(undefined as any)).toBe('string');
       expect($div.text()).toBe('test');
     });
 
@@ -1803,18 +1824,27 @@ describe('$(...)', () => {
     });
 
     it('( null ) : should convert to string', () => {
-      expect($('<div>').text(null).text()).toBe('null');
+      expect(
+        $('<div>')
+          .text(null as any)
+          .text()
+      ).toBe('null');
     });
 
     it('( 0 ) : should convert to string', () => {
-      expect($('<div>').text(0).text()).toBe('0');
+      expect(
+        $('<div>')
+          .text(0 as any)
+          .text()
+      ).toBe('0');
     });
 
     it('(str) should encode then decode unsafe characters', () => {
       const $apple = $('.apple');
 
       $apple.text('blah <script>alert("XSS!")</script> blah');
-      expect($apple[0].childNodes[0].data).toBe(
+      expect($apple[0].childNodes[0]).toHaveProperty(
+        'data',
         'blah <script>alert("XSS!")</script> blah'
       );
       expect($apple.text()).toBe('blah <script>alert("XSS!")</script> blah');

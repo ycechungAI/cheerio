@@ -1,5 +1,6 @@
-'use strict';
-const cheerio = require('../..');
+import cheerio from '../../src';
+import type { Cheerio } from '../cheerio';
+import type { Element } from 'domhandler';
 
 describe('$(...)', () => {
   describe('.css', () => {
@@ -61,11 +62,11 @@ describe('$(...)', () => {
     });
 
     describe('(prop, function):', () => {
-      let $el;
+      let $el: Cheerio<Element>;
       beforeEach(() => {
         $el = cheerio(
           '<div style="margin: 0px;"></div><div style="margin: 1px;"></div><div style="margin: 2px;">'
-        );
+        ) as Cheerio<Element>;
       });
 
       it('should iterate over the selection', () => {
@@ -75,6 +76,7 @@ describe('$(...)', () => {
           expect(value).toBe(`${count}px`);
           expect(this).toBe($el[count]);
           count++;
+          return undefined;
         });
         expect(count).toBe(3);
       });
@@ -90,7 +92,7 @@ describe('$(...)', () => {
 
     it('(obj): should set each key and val', () => {
       const el = cheerio('<li style="padding: 0;"></li><li></li>');
-      el.css({ foo: 0 });
+      el.css({ foo: 0 } as any);
       expect(el.eq(0).attr('style')).toBe('padding: 0; foo: 0;');
       expect(el.eq(1).attr('style')).toBe('foo: 0;');
     });
