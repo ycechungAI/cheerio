@@ -44,7 +44,7 @@
   },
   "devDependencies": {
     "@octokit/graphql": "^4.8.0",
-    "@types/benchmark": "^2.1.1",
+    "@types/benchmark": "^2.1.5",
     "@types/jest": "^27.0.1",
     "@types/jsdom": "^16.2.13",
     "@types/node": "^16.7.10",
